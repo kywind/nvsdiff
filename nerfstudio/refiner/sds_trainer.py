@@ -78,7 +78,11 @@ class SDSTrainerConfig(InstantiateConfig):
     """target class to instantiate"""
     fp16: bool = True
     """Whether to use fp16"""
-    sds_save_dir: str = "sds_vis/"
+    prompt: str = "living room with a lit furnace, couch and cozy curtains, bright lamps that make the room look well-lit"
+    """Prompt for sds"""
+    negative_prompt: str = "blurry, bad art, blurred, text, watermark, plant, nature"
+    """Negative prompt for sds"""
+    sds_save_dir: str = "vis_refiner/"
     """Directory to save sds visualization"""
     access_token: str = "none"
     """Access token for DeepFloyd huggingface model hub"""
@@ -132,8 +136,8 @@ class SDSTrainer:
         os.makedirs(self.workspace, exist_ok=True)
         os.makedirs(self.save_guidance_path, exist_ok=True)
 
-        self.prompt = "living room with a lit furnace, couch and cozy curtains, bright lamps that make the room look well-lit"
-        self.negative_prompt = "blurry, bad art, blurred, text, watermark, plant, nature"
+        self.prompt = config.prompt
+        self.negative_prompt = config.negative_prompt
 
         # model.to(device)
         # if self.world_size > 1:
@@ -143,9 +147,9 @@ class SDSTrainer:
 
         guidance = nn.ModuleDict()
         if self.guidance_method == 'IF':
-            guidance = IF(device, vram_O=True, t_range=[0.02, 0.5], access_token=config.access_token)
+            guidance = IF(device, vram_O=True, t_range=[0.2, 0.6], access_token=config.access_token)
         elif self.guidance_method == 'SD':
-            guidance = StableDiffusion(device, vram_O=True, t_range=[0.02, 0.5], access_token=config.access_token)
+            guidance = StableDiffusion(device, vram_O=True, t_range=[0.2, 0.6], access_token=config.access_token)
 
         self.guidance = guidance
         for p in self.guidance.parameters():

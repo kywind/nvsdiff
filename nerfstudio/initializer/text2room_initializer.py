@@ -68,6 +68,8 @@ class Text2RoomInitializerConfig(InitializerConfig):
     """initial prompt for generating the first image"""
     initial_neg_prompt: str = "blurry, bad art, blurred, text, watermark, plant, nature"
     """initial negative prompt for generating the first image"""
+    vis_path: str = "vis_initializer/text2room/"
+    """path to save extra visualization (not the final generated data)"""
 
 
 class Text2RoomInitializer(Initializer):
@@ -90,6 +92,7 @@ class Text2RoomInitializer(Initializer):
         self.device = device
         self.timestamp = timestamp
         self.initialize_save_dir = initialize_save_dir
+        self.vis_path = self.config.vis_path
 
 
     def initialize_scene(self, **kwargs) -> Dict[str, Any]:
@@ -104,20 +107,18 @@ class Text2RoomInitializer(Initializer):
         # self.rendered_path = None
         self.bbox = [torch.ones(3) * -1.0, torch.ones(3) * 1.0]  # initilize bounding box of meshs as [-1.0, -1.0, -1.0] -> [1.0, 1.0, 1.0]
 
-        self.out_path = 'text2room_vis/'
-
         # timestamp = datetime.now().strftime('%m%d-%H%M%S')
-        self.out_path = os.path.join(self.out_path, self.timestamp)
-        os.makedirs(self.out_path, exist_ok=True)
+        self.vis_path = os.path.join(self.vis_path, self.timestamp)
+        os.makedirs(self.vis_path, exist_ok=True)
 
-        self.rgb_path = os.path.join(self.out_path, "rgb")
-        self.rgbd_path = os.path.join(self.out_path, "rgbd")
-        self.rendered_path = os.path.join(self.out_path, "rendered")
-        self.depth_path = os.path.join(self.out_path, "depth")
-        self.fused_mesh_path = os.path.join(self.out_path, "fused_mesh")
-        self.mask_path = os.path.join(self.out_path, "mask")
-        self.output_rendering_path = os.path.join(self.out_path, "output_rendering")
-        self.output_depth_path = os.path.join(self.out_path, "output_depth")
+        self.rgb_path = os.path.join(self.vis_path, "rgb")
+        self.rgbd_path = os.path.join(self.vis_path, "rgbd")
+        self.rendered_path = os.path.join(self.vis_path, "rendered")
+        self.depth_path = os.path.join(self.vis_path, "depth")
+        self.fused_mesh_path = os.path.join(self.vis_path, "fused_mesh")
+        self.mask_path = os.path.join(self.vis_path, "mask")
+        self.output_rendering_path = os.path.join(self.vis_path, "output_rendering")
+        self.output_depth_path = os.path.join(self.vis_path, "output_depth")
 
         os.makedirs(self.rgb_path, exist_ok=True)
         os.makedirs(self.rgbd_path, exist_ok=True)
