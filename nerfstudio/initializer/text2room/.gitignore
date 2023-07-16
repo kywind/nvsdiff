@@ -1,0 +1,14 @@
+output/
+checkpoints/
+
+.idea
+.vscode
+__pycache__/
+
+*.pt
+
+LICENSE
+README.md
+requirements.txt
+docs/
+sample_data/

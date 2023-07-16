@@ -1,0 +1,27 @@
+[
+  {
+    "prompt": "a living room with a lit furnace, couch and cozy curtains, bright lamps that make the room look well-lit",
+    "fn_name": "forward_circle_fix_t",
+    "fn_args": {
+      "tz": -0.5
+    }
+  },
+  {
+    "fn_name": "forward_circle_fix_t",
+    "fn_args": {
+      "tz": 0.5
+    }
+  },
+  {
+    "fn_name": "forward_circle_fix_t",
+    "fn_args": {
+      "rx": -30
+    }
+  },
+  {
+    "fn_name": "forward_circle_fix_t",
+    "fn_args": {
+      "rx": 30
+    }
+  }
+]
