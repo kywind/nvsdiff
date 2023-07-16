@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 import torch
 from torch.utils.data import DataLoader
 
-from nerfstudio.initializer.sds.utils.pose_utils import rand_poses, circle_poses, visualize_poses
-from nerfstudio.initializer.sds.utils.utils import get_rays
+from nerfstudio.refiner.utils.pose_utils import rand_poses, circle_poses, visualize_poses
+from nerfstudio.refiner.utils.utils import get_rays
 from nerfstudio.cameras.cameras import Cameras, CameraType
 from nerfstudio.cameras.rays import RayBundle
 from nerfstudio.configs.base_config import InstantiateConfig
