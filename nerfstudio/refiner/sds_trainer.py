@@ -23,8 +23,8 @@ from torch_ema import ExponentialMovingAverage
 from nerfstudio.configs.base_config import InstantiateConfig
 from nerfstudio.refiner.utils.if_utils import IF
 from nerfstudio.refiner.utils.sd_utils import StableDiffusion
-# from nerfstudio.initializer.sds.utils.utils import get_CPU_mem, get_GPU_mem
-# from nerfstudio.initializer.sds.utils.optimizer import Adan
+# from nerfstudio.refiner.utils.utils import get_CPU_mem, get_GPU_mem
+# from nerfstudio.refiner.utils.optimizer import Adan
 
 """
 ray_samples, weights_list, ray_samples_list = self.proposal_sampler(ray_bundle, density_fns=self.density_fns)

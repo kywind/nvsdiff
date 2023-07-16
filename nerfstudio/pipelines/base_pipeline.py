@@ -53,8 +53,8 @@ from nerfstudio.inpainter.stable_diffusion import StableDiffusionInpainter
 from nerfstudio.inpainter.image_to_image import ImageToImageInpainter
 from nerfstudio.camera_generator.base_camera_generator import CameraGenerator, CameraGeneratorConfig
 from nerfstudio.initializer.base_initializer import Initializer, InitializerConfig
-from nerfstudio.initializer.sds.dataset import SDSDataset, SDSDatasetConfig
-from nerfstudio.initializer.sds.trainer import SDSTrainer, SDSTrainerConfig
+from nerfstudio.refiner.sds_dataset import SDSDataset, SDSDatasetConfig
+from nerfstudio.refiner.sds_trainer import SDSTrainer, SDSTrainerConfig
 from nerfstudio.cameras.cameras import Cameras, CameraType
 
 import os
