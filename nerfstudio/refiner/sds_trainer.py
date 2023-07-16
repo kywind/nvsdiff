@@ -21,8 +21,8 @@ from rich.console import Console
 from torch_ema import ExponentialMovingAverage
 
 from nerfstudio.configs.base_config import InstantiateConfig
-from nerfstudio.initializer.sds.utils.if_utils import IF
-from nerfstudio.initializer.sds.utils.sd_utils import StableDiffusion
+from nerfstudio.refiner.utils.if_utils import IF
+from nerfstudio.refiner.utils.sd_utils import StableDiffusion
 # from nerfstudio.initializer.sds.utils.utils import get_CPU_mem, get_GPU_mem
 # from nerfstudio.initializer.sds.utils.optimizer import Adan
 

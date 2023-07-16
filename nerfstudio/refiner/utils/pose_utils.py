@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 import trimesh
 import random
-from nerfstudio.initializer.sds.utils.utils import safe_normalize
+from nerfstudio.refiner.utils.utils import safe_normalize
 from nerfstudio.initializer.text2room.model.trajectories.convert_to_nerf_convention import \
     convert_pose_to_nerf_convention, convert_pose_from_nerf_convention
 
