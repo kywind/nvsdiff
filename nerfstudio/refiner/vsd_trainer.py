@@ -128,6 +128,10 @@ class VSDTrainerConfig(RefineTrainerConfig):
     """Start step for nerf training"""
     nerf_end_step: int = -1
     """End step for nerf training"""
+    lambda_vsd: float = 1.0
+    """Lambda for vsd loss"""
+    lambda_lora: float = 1.0
+    """Lambda for lora loss"""
 
     weights: Optional[str] = None
     pretrained_model_name_or_path: str = "stabilityai/stable-diffusion-2-1-base"
@@ -836,8 +840,10 @@ class VSDTrainer(RefineTrainer):
         # d(loss)/d(latents) = latents - target = latents - (latents - grad) = grad
         target = (latents - grad).detach()
         loss_vsd = 0.5 * F.mse_loss(latents, target, reduction="sum") / batch_size
+        loss_vsd *= self.config.lambda_vsd
 
         loss_lora = self.train_lora(latents, text_embeddings, camera_condition)
+        loss_lora *= self.config.lambda_lora
 
         return {
             "loss_vsd": loss_vsd,
