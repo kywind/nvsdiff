@@ -527,13 +527,18 @@ class VanillaPipeline(Pipeline):
         refine_params = self.refine_trainer.get_param_groups() if self.use_sds else {}
         # TODO(ethan): assert that key names don't overlap
         return {**datamanager_params, **model_params, **refine_params}
-    
+
     def get_state_dict(self):
         """Get the state dict of the pipeline.
 
         Returns:
             A dictionary containing the pipeline's state dict.
         """
-        datamanager_state_dict = self.datamanager.state_dict()
-        model_state_dict = self.model.state_dict()
-        return {**datamanager_state_dict, **model_state_dict}
+        state_dict_all = self.state_dict()
+        state_dict = {}
+        for key in state_dict_all.keys():
+            if "refine_trainer" in key:  # remove refine_trainer state_dict
+                continue
+            state_dict[key] = state_dict_all[key].clone()
+        del state_dict_all
+        return state_dict
