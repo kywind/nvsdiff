@@ -867,6 +867,8 @@ class VSDTrainer(RefineTrainer):
     
     def save_guidance_images(self, step):
         img = self.guidance_images
+        if img is None:
+            return
         # tgt = self.target_images
         # if img is None or tgt is None:
         #     return
