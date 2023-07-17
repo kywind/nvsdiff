@@ -248,7 +248,7 @@ class VanillaPipeline(Pipeline):
         world_size: int = 1,
         local_rank: int = 0,
         gen_data: bool = False,
-        use_sds: bool = False,
+        use_sds: bool = False,  # whether to use refinement
         max_num_cameras: int = 500,
         max_iter: int = 10000,
     ):
@@ -524,5 +524,6 @@ class VanillaPipeline(Pipeline):
         """
         datamanager_params = self.datamanager.get_param_groups()
         model_params = self.model.get_param_groups()
+        refine_params = self.refine_trainer.get_param_groups() if self.use_sds else {}
         # TODO(ethan): assert that key names don't overlap
-        return {**datamanager_params, **model_params}
+        return {**datamanager_params, **model_params, **refine_params}

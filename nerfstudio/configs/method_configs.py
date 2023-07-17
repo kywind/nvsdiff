@@ -269,6 +269,10 @@ method_configs["depth-nerfacto-vsd"] = TrainerConfig(
             "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
             "scheduler": None,
         },
+        "lora": {
+            "optimizer": AdamOptimizerConfig(lr=5e-4, eps=1e-15),
+            "scheduler": None,
+        }
     },
     viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
     vis="viewer",

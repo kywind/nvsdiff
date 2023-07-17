@@ -352,6 +352,15 @@ class VSDTrainer(RefineTrainer):
 
         print(f"[INFO] Loaded Stable Diffusion!")
 
+    def get_param_groups(self):
+        lora_params = []
+        for param in self.parameters():
+            if param.requires_grad:
+                lora_params.append(param)
+        return {
+            "lora": lora_params
+        }
+
     @torch.cuda.amp.autocast(enabled=False)
     def set_min_max_steps(self, min_step_percent=0.02, max_step_percent=0.98):
         self.min_step = int(self.num_train_timesteps * min_step_percent)

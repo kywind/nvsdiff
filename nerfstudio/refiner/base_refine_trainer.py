@@ -19,3 +19,6 @@ class RefineTrainer(nn.Module):
 
     def train_step(self, step, data):
         return None
+
+    def get_param_groups(self):  # no trainable parameters by default
+        return {}
