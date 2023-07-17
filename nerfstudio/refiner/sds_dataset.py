@@ -14,10 +14,11 @@ from nerfstudio.cameras.cameras import Cameras, CameraType
 from nerfstudio.cameras.rays import RayBundle
 from nerfstudio.configs.base_config import InstantiateConfig
 from nerfstudio.data.datamanagers.base_datamanager import DataManager
+from nerfstudio.refiner.base_refine_dataset import RefineDataset, RefineDatasetConfig
 
 
 @dataclass
-class SDSDatasetConfig(InstantiateConfig):
+class SDSDatasetConfig(RefineDatasetConfig):
     """Configuration for model instantiation"""
 
     _target: Type = field(default_factory=lambda: SDSDataset)
@@ -45,7 +46,7 @@ class SDSDatasetConfig(InstantiateConfig):
     jitter_pose: bool = False
     """jitter pose"""
 
-class SDSDataset:
+class SDSDataset(RefineDataset):
     def __init__(
         self, 
         config,

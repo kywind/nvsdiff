@@ -53,8 +53,8 @@ from nerfstudio.inpainter.stable_diffusion import StableDiffusionInpainter
 from nerfstudio.inpainter.image_to_image import ImageToImageInpainter
 from nerfstudio.camera_generator.base_camera_generator import CameraGenerator, CameraGeneratorConfig
 from nerfstudio.initializer.base_initializer import Initializer, InitializerConfig
-from nerfstudio.refiner.sds_dataset import SDSDataset, SDSDatasetConfig
-from nerfstudio.refiner.sds_trainer import SDSTrainer, SDSTrainerConfig
+from nerfstudio.refiner.base_refine_dataset import RefineDataset, RefineDatasetConfig
+from nerfstudio.refiner.base_refine_trainer import RefineTrainer, RefineTrainerConfig
 from nerfstudio.cameras.cameras import Cameras, CameraType
 
 import os
@@ -216,10 +216,10 @@ class VanillaPipelineConfig(cfg.InstantiateConfig):
     """specifies the camera generator config"""
     initializer: InitializerConfig = InitializerConfig()
     """specifies the initializer config"""
-    sds_dataset: SDSDatasetConfig = SDSDatasetConfig()
-    """specifies the sds dataset config"""
-    sds_trainer: SDSTrainerConfig = SDSTrainerConfig()
-    """specifies the sds trainer config"""
+    refine_dataset: RefineDatasetConfig = RefineDatasetConfig()
+    """specifies the refine dataset config"""
+    refine_trainer: RefineTrainerConfig = RefineTrainerConfig()
+    """specifies the refine trainer config"""
 
 
 class VanillaPipeline(Pipeline):
@@ -306,23 +306,23 @@ class VanillaPipeline(Pipeline):
 
         # TODO SDS Loss
         if self.use_sds:
-            self.sds_dataset = config.sds_dataset.setup(
+            self.refine_dataset = config.refine_dataset.setup(
                 datamanager=self.datamanager,
                 device=device,
                 max_iter=max_iter
             )
-            self.sds_dataloader = self.sds_dataset.dataloader()
+            self.refine_dataloader = self.refine_dataset.dataloader()
 
-            self.sds_start_step = config.sds_trainer.sds_start_step
-            self.sds_end_step = config.sds_trainer.sds_end_step
-            self.nerf_start_step = config.sds_trainer.nerf_start_step
-            self.nerf_end_step = config.sds_trainer.nerf_end_step
+            self.sds_start_step = config.refine_trainer.sds_start_step
+            self.sds_end_step = config.refine_trainer.sds_end_step
+            self.nerf_start_step = config.refine_trainer.nerf_start_step
+            self.nerf_end_step = config.refine_trainer.nerf_end_step
             if self.sds_end_step == -1:
                 self.sds_end_step = max_iter
             if self.nerf_end_step == -1:
                 self.nerf_end_step = max_iter
 
-            self.sds_trainer = config.sds_trainer.setup(
+            self.refine_trainer = config.refine_trainer.setup(
                 timestamp=self.timestamp,
                 model=self.model,
                 sds_iters=self.sds_end_step - self.sds_start_step,
@@ -378,8 +378,8 @@ class VanillaPipeline(Pipeline):
         # metrics_dict: dict_keys(['psnr', 'distortion', 'depth_loss', 'camera_opt_translation', 'camera_opt_rotation'])
 
         if self.use_sds and step >= self.sds_start_step and step < self.sds_end_step:
-            data = next(self.sds_dataloader) # H, W, rays_o, rays_d, dir, mvp, polar, azimuth, radius
-            sds_loss_dict, sds_outputs, sds_metrics = self.sds_trainer.train_step(step, data)
+            data = next(self.refine_dataloader) # H, W, rays_o, rays_d, dir, mvp, polar, azimuth, radius
+            sds_loss_dict, sds_outputs, sds_metrics = self.refine_trainer.train_step(step, data)
         
             loss_dict.update(sds_loss_dict)
             model_outputs.update(sds_outputs)
@@ -399,6 +399,9 @@ class VanillaPipeline(Pipeline):
             self.inpainter,
         )
         self.train()
+    
+    def save_guidance_images(self, step: int):
+        self.refine_trainer.save_guidance_images(step)
 
     def forward(self):
         """Blank forward method

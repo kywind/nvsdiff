@@ -61,6 +61,11 @@ from nerfstudio.pipelines.dynamic_batch import DynamicBatchPipelineConfig
 from nerfstudio.plugins.registry import discover_methods
 from nerfstudio.initializer.base_initializer import Initializer, InitializerConfig
 from nerfstudio.initializer.text2room_initializer import Text2RoomInitializerConfig
+from nerfstudio.refiner.base_refine_dataset import RefineDataset, RefineDatasetConfig
+from nerfstudio.refiner.sds_dataset import SDSDatasetConfig
+from nerfstudio.refiner.vsd_trainer import VSDTrainerConfig
+from nerfstudio.refiner.base_refine_trainer import RefineTrainer, RefineTrainerConfig
+from nerfstudio.refiner.sds_trainer import SDSTrainerConfig
 
 method_configs: Dict[str, TrainerConfig] = {}
 descriptions = {
@@ -218,6 +223,42 @@ method_configs["depth-nerfacto-text2room"] = TrainerConfig(
         ),
         model=DepthNerfactoModelConfig(eval_num_rays_per_chunk=1 << 15),
         initializer=Text2RoomInitializerConfig(),
+        refine_dataset=SDSDatasetConfig(),
+        refine_trainer=SDSTrainerConfig(),
+    ),
+    optimizers={
+        "proposal_networks": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        },
+        "fields": {
+            "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
+            "scheduler": None,
+        },
+    },
+    viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
+    vis="viewer",
+)
+
+method_configs["depth-nerfacto-vsd"] = TrainerConfig(
+    method_name="depth-nerfacto-vsd",
+    steps_per_eval_batch=500,
+    steps_per_save=2000,
+    max_num_iterations=30000,
+    mixed_precision=True,
+    pipeline=VanillaPipelineConfig(
+        datamanager=DepthDataManagerConfig(
+            dataparser=Text2RoomDataParserConfig(),
+            train_num_rays_per_batch=4096,
+            eval_num_rays_per_batch=4096,
+            camera_optimizer=CameraOptimizerConfig(
+                mode="SO3xR3", optimizer=AdamOptimizerConfig(lr=6e-4, eps=1e-8, weight_decay=1e-2)
+            ),
+        ),
+        model=DepthNerfactoModelConfig(eval_num_rays_per_chunk=1 << 15),
+        initializer=Text2RoomInitializerConfig(),
+        refine_dataset=SDSDatasetConfig(),
+        refine_trainer=VSDTrainerConfig(),
     ),
     optimizers={
         "proposal_networks": {

@@ -274,7 +274,7 @@ class Trainer:
                     self.save_checkpoint(step)
 
                 if self.config.use_sds and step_check(step, self.config.save_guidance_step):
-                    self.pipeline.sds_trainer.save_guidance_images(step)
+                    self.pipeline.save_guidance_images(step)
 
                 writer.write_out_storage()
 

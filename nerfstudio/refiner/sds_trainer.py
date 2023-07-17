@@ -23,6 +23,7 @@ from torch_ema import ExponentialMovingAverage
 from nerfstudio.configs.base_config import InstantiateConfig
 from nerfstudio.refiner.utils.if_utils import IF
 from nerfstudio.refiner.utils.sd_utils import StableDiffusion
+from nerfstudio.refiner.base_refine_trainer import RefineTrainer, RefineTrainerConfig
 # from nerfstudio.refiner.utils.utils import get_CPU_mem, get_GPU_mem
 # from nerfstudio.refiner.utils.optimizer import Adan
 
@@ -71,7 +72,7 @@ ray_samples, weights_list, ray_samples_list = self.proposal_sampler(ray_bundle, 
 """
 
 @dataclass
-class SDSTrainerConfig(InstantiateConfig):
+class SDSTrainerConfig(RefineTrainerConfig):
     """Configuration for model instantiation"""
 
     _target: Type = field(default_factory=lambda: SDSTrainer)
@@ -113,7 +114,7 @@ class SDSTrainerConfig(InstantiateConfig):
     latent_iter_ratio: float = 0
     """Ratio of iterations to use latent guidance"""
 
-class SDSTrainer:
+class SDSTrainer(RefineTrainer):
     def __init__(
         self,
         config,
@@ -123,6 +124,7 @@ class SDSTrainer:
         timestamp, # timestamp
         device: str = "cuda", # device
     ):
+        super().__init__(config)
         # self.config = config
         self.device = device
         self.sds_iters = sds_iters
