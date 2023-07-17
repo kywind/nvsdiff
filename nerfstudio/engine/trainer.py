@@ -395,9 +395,9 @@ class Trainer:
         torch.save(
             {
                 "step": step,
-                "pipeline": self.pipeline.module.state_dict()  # type: ignore
+                "pipeline": self.pipeline.module.get_state_dict()  # type: ignore
                 if hasattr(self.pipeline, "module")
-                else self.pipeline.state_dict(),
+                else self.pipeline.get_state_dict(),
                 "optimizers": {k: v.state_dict() for (k, v) in self.optimizers.optimizers.items()},
                 "scalers": self.grad_scaler.state_dict(),
             },
