@@ -62,8 +62,8 @@ class SDSDataset(RefineDataset):
         self.uniform_sphere_rate = 0
         # self.known_view_scale = 1.5
 
-        # self.default_radius = 3.2
         # self.default_fovy = 20
+        self.default_radius = 0
         self.default_polar = 90
         self.default_azimuth = 0
 
@@ -139,7 +139,7 @@ class SDSDataset(RefineDataset):
         delta_polar = thetas - self.default_polar
         delta_azimuth = phis - self.default_azimuth
         delta_azimuth[delta_azimuth > 180] -= 360 # range in [-180, 180]
-        # delta_radius = radius - self.default_radius
+        delta_radius = radius - self.default_radius
 
         # distortion_params = torch.stack(distort, dim=0)[idx_tensor]
 
@@ -198,7 +198,8 @@ class SDSDataset(RefineDataset):
             'W': self.W,
             'polar': delta_polar,
             'azimuth': delta_azimuth,
-            # 'radius': delta_radius,
+            'radius': delta_radius,
+            'c2w': poses,
         }
         # import ipdb; ipdb.set_trace()
 

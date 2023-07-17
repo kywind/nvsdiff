@@ -379,7 +379,17 @@ class VanillaPipeline(Pipeline):
 
         if self.use_sds and step >= self.sds_start_step and step < self.sds_end_step:
             data = next(self.refine_dataloader) # H, W, rays_o, rays_d, dir, mvp, polar, azimuth, radius
-            sds_loss_dict, sds_outputs, sds_metrics = self.refine_trainer.train_step(step, data)
+            H, W = data['H'], data['W']
+            sds_render = self.model(data['ray_bundle'], step)
+            guidance_input = {
+                'image': sds_render['rgb'].reshape(H, W, 3),
+                'depth': sds_render['depth'].reshape(H, W),
+                'weights_sum': sds_render['accumulation'].reshape(H, W),
+                'weights': sds_render['weights_list'][-1].reshape(H, W, -1),
+                'normal_image': sds_render['pred_normals'].reshape(H, W, 3) if 'pred_normals' in sds_render else None,
+            }
+            data_meta = {'H': H, 'W': W, 'azimuth': data['azimuth'], 'polar': data['polar'], 'radius': data['radius'], 'c2w': data['c2w']}
+            sds_loss_dict, sds_outputs, sds_metrics = self.refine_trainer.train_step(step, guidance_input, data_meta)
         
             loss_dict.update(sds_loss_dict)
             model_outputs.update(sds_outputs)

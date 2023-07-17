@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from jaxtyping import Float
 
 import re
+import os
+import cv2
 import gc
 import tinycudann as tcnn
 
@@ -28,7 +30,7 @@ from nerfstudio.refiner.utils.if_utils import IF
 from nerfstudio.refiner.utils.sd_utils import StableDiffusion
 from nerfstudio.refiner.base_refine_trainer import RefineTrainer, RefineTrainerConfig
 
-from nerfstudio.refiner.utils.vsd_prompt_processor import PromptProcessorOutput
+from nerfstudio.refiner.utils.vsd_prompt_processor import PromptProcessorOutput, PromptProcessor
 
 # import threestudio
 # from threestudio.models.prompt_processors.base import PromptProcessorOutput
@@ -164,6 +166,17 @@ class VSDTrainer(RefineTrainer):
         super().__init__(config)
         self.config = config
         self.device = device
+        self.model = model
+        self.time_stamp = timestamp
+
+        self.sds_iters = sds_iters
+        self.total_iters = total_iters
+
+        self.workspace = os.path.join(config.sds_save_dir, self.time_stamp)
+        self.save_guidance_path = os.path.join(self.workspace, 'guidance_vsd')
+        os.makedirs(self.workspace, exist_ok=True)
+        os.makedirs(self.save_guidance_path, exist_ok=True)
+
         self.configure()
         if self.config.weights is not None:
             # format: path/to/weights:module_name
@@ -270,7 +283,7 @@ class VSDTrainer(RefineTrainer):
         # FIXME: hard-coded dims
         self.camera_embedding = ToWeightsDType(
             TimestepEmbedding(16, 1280), self.weights_dtype
-        )
+        ).to(self.device)
         self.unet_lora.class_embedding = self.camera_embedding
 
         # set up LoRA layers
@@ -294,7 +307,7 @@ class VSDTrainer(RefineTrainer):
 
             lora_attn_procs[name] = LoRAAttnProcessor(
                 hidden_size=hidden_size, cross_attention_dim=cross_attention_dim
-            )
+            ).to(self.device)
 
         self.unet_lora.set_attn_processor(lora_attn_procs)
 
@@ -327,10 +340,15 @@ class VSDTrainer(RefineTrainer):
         self.num_train_timesteps = self.scheduler.config.num_train_timesteps
         self.set_min_max_steps()  # set to default value
 
-        self.alphas: Float[Tensor, "..."] = self.scheduler.alphas_cumprod.to(self.device)
-        import ipdb; ipdb.set_trace() ## what is self.alphas?
+        self.alphas: Float[Tensor, "..."] = self.scheduler.alphas_cumprod.to(self.device)  
+        # alphas: shape: [1000], mono-decrease, 0.9991~0.0047
 
         self.grad_clip_val: Optional[float] = None
+
+        self.prompt_utils: PromptProcessorOutput = PromptProcessor(
+            prompt=self.config.prompt,
+            pretrained_model_name_or_path=self.config.pretrained_model_name_or_path,
+        ).process()
 
         print(f"[INFO] Loaded Stable Diffusion!")
 
@@ -441,7 +459,6 @@ class VSDTrainer(RefineTrainer):
 
     def sample(
         self,
-        prompt_utils: PromptProcessorOutput,
         elevation: Float[Tensor, "B"],
         azimuth: Float[Tensor, "B"],
         camera_distances: Float[Tensor, "B"],
@@ -449,7 +466,7 @@ class VSDTrainer(RefineTrainer):
         **kwargs,
     ) -> Float[Tensor, "N H W 3"]:
         # view-dependent text embeddings
-        text_embeddings_vd = prompt_utils.get_text_embeddings(
+        text_embeddings_vd = self.prompt_utils.get_text_embeddings(
             elevation,
             azimuth,
             camera_distances,
@@ -470,7 +487,6 @@ class VSDTrainer(RefineTrainer):
 
     def sample_lora(
         self,
-        prompt_utils: PromptProcessorOutput,
         elevation: Float[Tensor, "B"],
         azimuth: Float[Tensor, "B"],
         camera_distances: Float[Tensor, "B"],
@@ -480,7 +496,7 @@ class VSDTrainer(RefineTrainer):
         **kwargs,
     ) -> Float[Tensor, "N H W 3"]:
         # input text embeddings, view-independent
-        text_embeddings = prompt_utils.get_text_embeddings(
+        text_embeddings = self.prompt_utils.get_text_embeddings(
             elevation, azimuth, camera_distances, view_dependent_prompting=False
         )
 
@@ -715,20 +731,9 @@ class VSDTrainer(RefineTrainer):
             latents = self.encode_images(rgb_BCHW_512)
         return latents
 
-    def train_step(self, step, data, **kwargs):
-        ray_bundle = data['ray_bundle']
+    def train_step(self, step, outputs, data, **kwargs):
         B = 1
         H, W = data['H'], data['W']
-        
-        # TODO
-        model_outputs = self.model(ray_bundle, step)
-        outputs = {
-            'image': model_outputs['rgb'].reshape(H, W, 3),
-            'depth': model_outputs['depth'].reshape(H, W),
-            'weights_sum': model_outputs['accumulation'].reshape(H, W),
-            'weights': model_outputs['weights_list'][-1].reshape(H, W, -1),
-            'normal_image': model_outputs['pred_normals'].reshape(H, W, 3) if 'pred_normals' in model_outputs else None,
-        }
 
         self.guidance_images = outputs['image']
         pred_depth = outputs['depth'].reshape(B, 1, H, W)
@@ -737,20 +742,21 @@ class VSDTrainer(RefineTrainer):
         #     pred_normal = outputs['normal_image'].reshape(B, H, W, 3)
 
         pred_rgb = outputs['image'].reshape(B, H, W, 3).permute(0, 3, 1, 2).contiguous() # [B, 3, H, W]
-        # as_latent = self.guidance_method == 'SD' and step * 1. / self.total_iters < self.latent_iter_ratio
-        # if as_latent:
-        #     # abuse normal & mask as latent code for faster geometry initialization (ref: fantasia3D)
-        #     pred_rgb = torch.cat([pred_rgb, pred_mask], dim=1).contiguous() # [B, 4, H, W]
+
+        as_latent = False
+        if as_latent:
+            # abuse normal & mask as latent code for faster geometry initialization (ref: fantasia3D)
+            pred_rgb = torch.cat([pred_rgb, pred_mask], dim=1).contiguous() # [B, 4, H, W]
 
         losses = self.forward(
             rgb=pred_rgb,
-            prompt_utils=None, # TODO
-            elevation=None,
+            elevation=data['polar'],
             azimuth=data['azimuth'],
-            camera_distances=None,
+            camera_distances=data['radius'],
             mvp_mtx=None,
-            c2w=None,
-            rgb_as_latents=False,
+            c2w=data['c2w'],
+            rgb_as_latents=as_latent,
+            step=step,
         )
         loss_vsd, loss_lora = losses['loss_vsd'], losses['loss_lora']
 
@@ -773,8 +779,7 @@ class VSDTrainer(RefineTrainer):
 
     def forward(
         self,
-        rgb: Float[Tensor, "B H W C"],
-        prompt_utils: PromptProcessorOutput,
+        rgb: Float[Tensor, "B C H W"],
         elevation: Float[Tensor, "B"],
         azimuth: Float[Tensor, "B"],
         camera_distances: Float[Tensor, "B"],
@@ -783,14 +788,11 @@ class VSDTrainer(RefineTrainer):
         rgb_as_latents=False,
         **kwargs,
     ):
-        batch_size = rgb.shape[0]  # rgb: [1, 64, 64, 3], [0, 1]
-        import ipdb; ipdb.set_trace()
-
-        rgb_BCHW = rgb.permute(0, 3, 1, 2)
-        latents = self.get_latents(rgb_BCHW, rgb_as_latents=rgb_as_latents)
+        batch_size = rgb.shape[0]  # rgb: B3HW, [0, 1]
+        latents = self.get_latents(rgb, rgb_as_latents=rgb_as_latents)
 
         # view-dependent text embeddings
-        text_embeddings_vd = prompt_utils.get_text_embeddings(
+        text_embeddings_vd = self.prompt_utils.get_text_embeddings(
             elevation,
             azimuth,
             camera_distances,
@@ -798,13 +800,14 @@ class VSDTrainer(RefineTrainer):
         )
 
         # input text embeddings, view-independent
-        text_embeddings = prompt_utils.get_text_embeddings(
+        text_embeddings = self.prompt_utils.get_text_embeddings(
             elevation, azimuth, camera_distances, view_dependent_prompting=False
         )
 
         if self.config.camera_condition_type == "extrinsics":
             camera_condition = c2w
         elif self.config.camera_condition_type == "mvp":
+            raise NotImplementedError
             camera_condition = mvp_mtx
         else:
             raise ValueError(
@@ -814,7 +817,6 @@ class VSDTrainer(RefineTrainer):
         grad = self.compute_grad_vsd(
             latents, text_embeddings_vd, text_embeddings, camera_condition
         )
-        import ipdb; ipdb.set_trace()
 
         grad = torch.nan_to_num(grad)
         # clip grad for stable training?
@@ -847,3 +849,15 @@ class VSDTrainer(RefineTrainer):
             min_step_percent=C(self.config.min_step_percent, epoch, global_step),
             max_step_percent=C(self.config.max_step_percent, epoch, global_step),
         )
+    
+    def save_guidance_images(self, step):
+        img = self.guidance_images
+        # tgt = self.target_images
+        # if img is None or tgt is None:
+        #     return
+        img = img.contiguous().detach().cpu().numpy() * 255
+        save_path = os.path.join(self.save_guidance_path, f'step_{step:07d}.png')
+        cv2.imwrite(save_path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+        # tgt = tgt.contiguous().detach().cpu().numpy() * 255
+        # save_path = os.path.join(self.save_guidance_path, f'step_{step:07d}_tgt.png')
+        # cv2.imwrite(save_path, cv2.cvtColor(tgt, cv2.COLOR_RGB2BGR))

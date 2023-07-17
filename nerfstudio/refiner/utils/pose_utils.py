@@ -140,7 +140,7 @@ def rand_poses(size, device, base_cameras, radius_range=[1, 1.5], theta_range=[0
     poses = torch.eye(4, dtype=torch.float, device=device)
     poses[:3, :3] = torch.stack((right_vector, up_vector, -forward_vector), dim=1)  # dim=1: world to cam, dim=2: cam to world
     poses[:3, 3] = -centers.mm(poses[:3, :3].clone().T)
-    poses = convert_pose_to_nerf_convention(poses).to(torch.float32)
+    poses = convert_pose_to_nerf_convention(poses).to(torch.float32)  # output: cam_to_world matrix in nerf convention
     poses = poses.unsqueeze(0).repeat(size, 1, 1)
 
     if return_dirs:

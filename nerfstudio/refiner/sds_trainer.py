@@ -210,7 +210,7 @@ class SDSTrainer(RefineTrainer):
             raise ValueError(f'Guidance method {self.guidance_method} not supported.')
 
 
-    def train_step(self, step, data, save_guidance_path=None):
+    def train_step(self, step, outputs, data, save_guidance_path=None):
         """
             Args:
                 save_guidance_path: an image that combines the NeRF render, the added latent noise,
@@ -219,7 +219,7 @@ class SDSTrainer(RefineTrainer):
         # rays_o = data['rays_o'] # [B, N, 3]
         # rays_d = data['rays_d'] # [B, N, 3]
         # mvp = data['mvp'] # [B, 4, 4]
-        ray_bundle = data['ray_bundle']
+        # ray_bundle = data['ray_bundle']
 
         # B, N = rays_o.shape[:2]
         # B = ray_bundle.camera_indices.shape[0]
@@ -246,15 +246,15 @@ class SDSTrainer(RefineTrainer):
         # else:
         #     bg_color = torch.rand(3).to(self.device) # single color random bg
 
-        # TODO
-        model_outputs = self.model(ray_bundle, step)
-        outputs = {
-            'image': model_outputs['rgb'].reshape(H, W, 3),
-            'depth': model_outputs['depth'].reshape(H, W),
-            'weights_sum': model_outputs['accumulation'].reshape(H, W),
-            'weights': model_outputs['weights_list'][-1].reshape(H, W, -1),
-            'normal_image': model_outputs['pred_normals'].reshape(H, W, 3) if 'pred_normals' in model_outputs else None,
-        }
+        # TODO this part has been moved to base_pipeline.py
+        # model_outputs = self.model(ray_bundle, step)
+        # outputs = {
+        #     'image': model_outputs['rgb'].reshape(H, W, 3),
+        #     'depth': model_outputs['depth'].reshape(H, W),
+        #     'weights_sum': model_outputs['accumulation'].reshape(H, W),
+        #     'weights': model_outputs['weights_list'][-1].reshape(H, W, -1),
+        #     'normal_image': model_outputs['pred_normals'].reshape(H, W, 3) if 'pred_normals' in model_outputs else None,
+        # }
 
         # visualize
         # if step % 100 == 0:
