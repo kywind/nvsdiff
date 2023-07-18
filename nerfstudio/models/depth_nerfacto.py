@@ -76,7 +76,7 @@ class DepthNerfactoModel(NerfactoModel):
 
     def get_metrics_dict(self, outputs, batch):
         metrics_dict = super().get_metrics_dict(outputs, batch)
-        if self.training:
+        if self.training and batch is not None:  # batch can be none in refine stage
             metrics_dict["depth_loss"] = 0.0
             sigma = self._get_sigma().to(self.device)
             termination_depth = batch["depth_image"].to(self.device)
@@ -96,8 +96,9 @@ class DepthNerfactoModel(NerfactoModel):
 
     def get_loss_dict(self, outputs, batch, metrics_dict=None):
         loss_dict = super().get_loss_dict(outputs, batch, metrics_dict)
-        if self.training:
-            assert metrics_dict is not None and "depth_loss" in metrics_dict
+        if self.training and metrics_dict is not None and "depth_loss" in metrics_dict:
+            # depth_loss can be none in refine stage
+            # assert metrics_dict is not None and "depth_loss" in metrics_dict
             loss_dict["depth_loss"] = self.config.depth_loss_mult * metrics_dict["depth_loss"]
 
         return loss_dict

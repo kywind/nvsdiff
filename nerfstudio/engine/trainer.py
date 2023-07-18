@@ -423,7 +423,29 @@ class Trainer:
             _, loss_dict, metrics_dict = self.pipeline.get_train_loss_dict(step=step)
             loss = functools.reduce(torch.add, loss_dict.values())
         self.grad_scaler.scale(loss).backward()  # type: ignore
-        self.optimizers.optimizer_scaler_step_all(self.grad_scaler)
+
+        # modified optimizer stepping for our initializer-refiner framework
+        # original: self.optimizers.optimizer_scaler_step_all(self.grad_scaler)
+        for param_group in self.optimizers.optimizers.keys():
+            if param_group == "lora":
+                # if this param_group exists then refiner must be vsd, so no need to check
+                if self.pipeline.use_sds and \
+                        step >= self.pipeline.sds_start_step and \
+                        step < self.pipeline.sds_end_step:
+                    self.optimizers.optimizer_scaler_step(self.grad_scaler, param_group)
+                else:
+                    continue
+            elif param_group == "camera_opt": # self.config.pipeline.datamanager.camera_optimizer.param_group:
+                # if this param_group exists then camera mode cannot be off, so no need to check
+                if (not self.pipeline.use_sds) or \
+                        (self.pipeline.use_sds and \
+                        step >= self.pipeline.nerf_start_step and \
+                        step < self.pipeline.nerf_end_step):
+                    self.optimizers.optimizer_scaler_step(self.grad_scaler, param_group)
+                else:
+                    continue
+            else:
+                self.optimizers.optimizer_scaler_step(self.grad_scaler, param_group)
 
         if self.config.log_gradients:
             total_grad = 0

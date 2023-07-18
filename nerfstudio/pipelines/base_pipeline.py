@@ -371,7 +371,7 @@ class VanillaPipeline(Pipeline):
             loss_dict = {}
             model_outputs = {}
             metrics_dict = {}
-        
+
         # loss_dict: dict_keys(['rgb_loss', 'interlevel_loss', 'distortion_loss', 'depth_loss'])
         # model_outputs: dict_keys(['rgb', 'accumulation', 'depth', 'weights_list', 'ray_samples_list', 'prop_depth_0', 'prop_depth_1', 'directions_norm'])
         # metrics_dict: dict_keys(['psnr', 'distortion', 'depth_loss', 'camera_opt_translation', 'camera_opt_rotation'])
@@ -380,6 +380,13 @@ class VanillaPipeline(Pipeline):
             data = next(self.refine_dataloader) # H, W, rays_o, rays_d, dir, mvp, polar, azimuth, radius
             H, W = data['H'], data['W']
             sds_render = self.model(data['ray_bundle'], step)
+
+            nerf_metrics = self.model.get_metrics_dict(sds_render, batch=None)
+            nerf_loss_dict = self.model.get_loss_dict(sds_render, batch=None, metrics_dict=nerf_metrics)
+
+            loss_dict.update(nerf_loss_dict)
+            metrics_dict.update(nerf_metrics)
+
             guidance_input = {
                 'image': sds_render['rgb'].reshape(H, W, 3),
                 'depth': sds_render['depth'].reshape(H, W),
@@ -387,7 +394,9 @@ class VanillaPipeline(Pipeline):
                 'weights': sds_render['weights_list'][-1].reshape(H, W, -1),
                 'normal_image': sds_render['pred_normals'].reshape(H, W, 3) if 'pred_normals' in sds_render else None,
             }
-            data_meta = {'H': H, 'W': W, 'azimuth': data['azimuth'], 'polar': data['polar'], 'radius': data['radius'], 'c2w': data['c2w']}
+            data_meta = {'H': H, 'W': W, 'azimuth': data['azimuth'], 
+                'polar': data['polar'], 'radius': data['radius'], 'c2w': data['c2w']}
+
             sds_loss_dict, sds_outputs, sds_metrics = self.refine_trainer.train_step(step, guidance_input, data_meta)
         
             loss_dict.update(sds_loss_dict)
