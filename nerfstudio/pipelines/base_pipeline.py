@@ -524,7 +524,6 @@ class VanillaPipeline(Pipeline):
         datamanager_params = self.datamanager.get_param_groups()
         model_params = self.model.get_param_groups()
         refine_params = self.refine_trainer.get_param_groups() if self.use_sds else {}
-        import ipdb; ipdb.set_trace()
         # TODO(ethan): assert that key names don't overlap
         return {**datamanager_params, **model_params, **refine_params}
 
