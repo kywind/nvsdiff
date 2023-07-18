@@ -176,6 +176,9 @@ class VSDTrainer(RefineTrainer):
         self.sds_iters = sds_iters
         self.total_iters = total_iters
 
+        self.guidance_images = None
+        self.lora_images = None
+        self.target_images = None
         self.workspace = os.path.join(config.sds_save_dir, self.time_stamp)
         self.save_guidance_path = os.path.join(self.workspace, 'guidance_vsd')
         os.makedirs(self.workspace, exist_ok=True)
