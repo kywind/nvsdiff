@@ -161,7 +161,6 @@ class VSDTrainer(RefineTrainer):
     def __init__(
         self,
         config,
-        model, # network
         sds_iters, # sds iterations
         total_iters, # total iterations
         timestamp, # timestamp
@@ -170,7 +169,6 @@ class VSDTrainer(RefineTrainer):
         super().__init__(config)
         self.config = config
         self.device = device
-        self.model = model
         self.time_stamp = timestamp
 
         self.sds_iters = sds_iters

@@ -118,7 +118,6 @@ class SDSTrainer(RefineTrainer):
     def __init__(
         self,
         config,
-        model, # network
         sds_iters, # sds iterations
         total_iters, # total iterations
         timestamp, # timestamp
@@ -145,7 +144,7 @@ class SDSTrainer(RefineTrainer):
         # if self.world_size > 1:
         #     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         #     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-        self.model = model
+        # self.model = model
 
         guidance = nn.ModuleDict()
         if self.guidance_method == 'IF':
