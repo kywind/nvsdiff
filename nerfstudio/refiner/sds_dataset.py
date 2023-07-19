@@ -218,7 +218,7 @@ class SDSDataset(RefineDataset):
 
     def dataloader(self, batch_size=None):
         batch_size = batch_size or self.batch_size
-        loader = DataLoader(list(range(self.max_iter)), batch_size=batch_size, 
+        loader = DataLoader(list(range(max(self.max_iter, 100))), batch_size=batch_size, 
             collate_fn=self.collate, shuffle=True, num_workers=0)
             # collate_fn=self.collate, shuffle=self.training, num_workers=0)
         loader._data = self

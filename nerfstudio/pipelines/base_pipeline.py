@@ -248,7 +248,7 @@ class VanillaPipeline(Pipeline):
         world_size: int = 1,
         local_rank: int = 0,
         gen_data: bool = False,
-        use_sds: bool = False,  # whether to use refinement
+        use_sds: bool = True,  # whether to use refinement
         max_num_cameras: int = 500,
         max_iter: int = 10000,
     ):
@@ -545,7 +545,8 @@ class VanillaPipeline(Pipeline):
         state_dict_all = self.state_dict()
         state_dict = {}
         for key in state_dict_all.keys():
-            if "refine_trainer" in key:  # remove refine_trainer state_dict
+            if not self.config.refine_trainer.save_state_dict and \
+                    "refine_trainer" in key:  # remove refine_trainer state_dict
                 continue
             state_dict[key] = state_dict_all[key].clone()
         del state_dict_all

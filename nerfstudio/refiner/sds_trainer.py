@@ -113,6 +113,9 @@ class SDSTrainerConfig(RefineTrainerConfig):
     """Guidance methods"""
     latent_iter_ratio: float = 0
     """Ratio of iterations to use latent guidance"""
+    save_state_dict: bool = False
+    """Whether to save state dict"""
+
 
 class SDSTrainer(RefineTrainer):
     def __init__(
@@ -183,7 +186,7 @@ class SDSTrainer(RefineTrainer):
         self.target_images = None
 
         print(f'[INFO] Trainer: {self.time_stamp} | {self.device} | {"fp16" if self.fp16 else "fp32"} | {self.workspace}')
-        print(f'[INFO] #parameters: {sum([p.numel() for p in model.parameters() if p.requires_grad])}')
+        # print(f'[INFO] #parameters: {sum([p.numel() for p in model.parameters() if p.requires_grad])}')
 
 
     @torch.no_grad()

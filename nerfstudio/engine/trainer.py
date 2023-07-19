@@ -91,7 +91,7 @@ class TrainerConfig(ExperimentConfig):
     """Number of cameras to inpaint per inpainting step."""
     gen_data: bool = False
     """generate data for training"""
-    use_sds: bool = False
+    use_sds: bool = True
     """use sds for training"""
     max_num_cameras: int = 500
     """specifies maximum number of training data to use"""

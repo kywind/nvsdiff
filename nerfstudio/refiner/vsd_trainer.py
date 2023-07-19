@@ -132,6 +132,8 @@ class VSDTrainerConfig(RefineTrainerConfig):
     """Lambda for vsd loss"""
     lambda_lora: float = 1.0
     """Lambda for lora loss"""
+    save_state_dict: bool = True
+    """Whether to save state dict"""
 
     weights: Optional[str] = None
     pretrained_model_name_or_path: str = "stabilityai/stable-diffusion-2-1-base"
